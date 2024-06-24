@@ -1,11 +1,11 @@
-import sys 
-import os 
+# import sys 
+# import os 
 
-base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append(os.path.join(base_dir, "transformers/src"))
+# base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.join(base_dir, "transformers/src"))
 
-from transformers.configuration_utils import PretrainedConfig
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+# from transformers.configuration_utils import PretrainedConfig
+# from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 import enum
 import json
@@ -13,6 +13,7 @@ from dataclasses import dataclass, field, fields
 from typing import (TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple,
                     Union)
 
+from transformers import PretrainedConfig, PreTrainedTokenizerBase
 import torch
 from vllm.logger import init_logger
 from vllm.model_executor.layers.quantization import QUANTIZATION_METHODS
