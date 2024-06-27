@@ -26,6 +26,7 @@ from vllm.sampling_params import SamplingParams
 from vllm.sequence import SamplerOutput, SequenceData, SequenceGroupMetadata
 from vllm.utils import (CudaMemoryProfiler, get_kv_cache_torch_dtype, is_hip,
                         is_pin_memory_available, make_tensor_with_pad)
+from vllm.capture_state import CaptureState
 
 logger = init_logger(__name__)
 
@@ -1027,6 +1028,8 @@ class CUDAGraphRunner:
         torch.cuda.synchronize()
 
         # Capture the graph.
+        capture_state = CaptureState()
+        capture_state.start_capture()
         self._graph = torch.cuda.CUDAGraph()
         with torch.cuda.graph(self._graph, pool=memory_pool, stream=stream):
             output_hidden_states = self.model(
@@ -1056,6 +1059,8 @@ class CUDAGraphRunner:
             "block_tables": attn_metadata.decode_metadata.block_tables,
         }
         self.output_buffers = {"hidden_states": hidden_states}
+        capture_state = CaptureState()
+        capture_state.end_capture()
         return hidden_states
 
     def forward(

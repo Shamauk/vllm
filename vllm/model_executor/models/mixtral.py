@@ -25,7 +25,9 @@ from typing import Iterable, List, Optional, Tuple
 
 import torch
 from torch import nn
+import numpy as np
 from transformers import MixtralConfig
+from vllm.capture_state import CaptureState
 
 from vllm import _custom_ops as ops
 from vllm.attention import Attention, AttentionMetadata
@@ -81,6 +83,8 @@ class MixtralMoE(nn.Module):
         self.hidden_size = hidden_size
         self.intermediate_size = intermediate_size // self.tp_size
         self.quant_config = quant_config
+        self.logits_file_path = "router_logits.txt"
+        self.logits_file = open(self.logits_file_path, 'a')
 
         # FIXME(pcmoritz): Make this more general to support different
         # quantization schemes
@@ -268,6 +272,9 @@ class MixtralMoE(nn.Module):
         hidden_states = hidden_states.view(-1, self.hidden_size)
         # router_logits: (num_tokens, n_experts)
         router_logits, _ = self.gate(hidden_states)
+        capture_state = CaptureState()
+        if not capture_state.is_capturing:
+            self.write_logits_to_file(router_logits)
         final_hidden_states = fused_moe(hidden_states,
                                         self.w13_weight,
                                         self.w2_weight,
@@ -286,10 +293,14 @@ class MixtralMoE(nn.Module):
                 final_hidden_states)
 
         return final_hidden_states.view(num_tokens, hidden_size)
+    
+    def write_logits_to_file(self, router_logits):
+        np_logits = router_logits.detach().cpu().numpy()
+        np.savetxt(self.logits_file, np_logits, fmt="%.6f")
+        self.logits_file.write("BATCH\n")
 
 
 class MixtralAttention(nn.Module):
-
     def __init__(
         self,
         hidden_size: int,
